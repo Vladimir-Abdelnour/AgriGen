@@ -8,7 +8,7 @@ from pathlib import Path
 # from tkinter import *
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
-from governer import control_loop_with_plant_data, get_info
+from governer import *
 from multiprocessing import Process
 
 OUTPUT_PATH = Path(__file__).parent
@@ -79,7 +79,7 @@ canvas.create_text(
     font=("Roboto Regular", 22 * -1)
 )
 
-canvas.create_text(
+plant_health_text = canvas.create_text(
     233.0,
     334.50006103515625,
     anchor="nw",
@@ -364,17 +364,53 @@ image_22 = canvas.create_image(
     image=image_image_22
 )
 
-def set_temperature(temp: str):
+def set_temperature(temp: str, color: Color):
     canvas.itemconfig(temp_text, text=f"{temp} F")
+    if color == Color.Red:
+        col = Color.Red.value
+    else:
+        col = Color.Green.value
+    canvas.itemconfig(temp_text, fill=col)
 
-def set_humidity(humidity: str):
+def set_humidity(humidity: str, color: Color):
     canvas.itemconfig(hum_text, text=f"{humidity}%")
+    if color == Color.Red:
+        col = Color.Red.value
+    else:
+        col = Color.Green.value
+    canvas.itemconfig(hum_text, fill=col)
 
-def set_phlevel(ph: str):
+def set_phlevel(ph: str, color: Color):
     canvas.itemconfig(ph_text, text=ph)
+    if color == Color.Red:
+        col = Color.Red.value
+    else:
+        col = Color.Green.value
+    canvas.itemconfig(ph_text, fill=col)
 
-def set_eclevel(ec: str):
+def set_eclevel(ec: str, color: Color):
     canvas.itemconfig(ec_text, text=ec)
+    if color == Color.Red:
+        col = Color.Red.value
+    else:
+        col = Color.Green.value
+    canvas.itemconfig(ec_text, fill=col)
+
+def plant_health(temp_color: Color, hum_color: Color, ph_color: Color, ec_color: Color):
+    count = 0
+    if temp_color == Color.Red:
+        count += 1
+    if hum_color == Color.Red:
+        count += 1
+    if ph_color == Color.Red:
+        count += 1
+    if ec_color == Color.Red:
+        count += 1
+
+    if(count >= 1):
+        canvas.itemconfig(plant_health_text, text="IMPROPER", fill=Color.Red.value)
+    else:
+        canvas.itemconfig(plant_health_text, text="OPTIMAL", fill=Color.Green.value)
 
 window.resizable(False, False)
 
@@ -382,11 +418,13 @@ def background_task():
     global i
     i = i + 1
     control_loop_with_plant_data("lettuce", i)
-    temp, hum, ph, ec = get_info()
-    set_temperature(temp)
-    set_humidity(hum)
-    set_phlevel(ph)
-    set_eclevel(ec)
+    temp, hum, ph, ec = get_textinfo()
+    temp_color, hum_color, ph_color, ec_color = get_colorinfo()
+    set_temperature(temp, temp_color)
+    set_humidity(hum, hum_color)
+    set_phlevel(ph, ph_color)
+    set_eclevel(ec, ec_color)
+    plant_health(temp_color, hum_color, ph_color, ec_color)
     window.after(3000, background_task)
 
 background_task()

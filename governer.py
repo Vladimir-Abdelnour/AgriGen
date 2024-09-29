@@ -6,6 +6,21 @@ from Sensors.sensors import*
 from Database_handler import *
 from Utils.controls import *
 import os
+from enum import Enum
+
+class Color(Enum):
+    Red = "#C90303"
+    Green = "#27BC1A"
+
+#UI Controls
+temp_text = ""
+hum_text = ""
+ph_text = ""
+ec_text = ""
+temp_color = Color.Green
+hum_color = Color.Green
+ph_color = Color.Green
+ec_color = Color.Green
 
 # Variable Definitions (Global Variables for State Tracking)
 daily_par_accumulation = 0  # Keeps track of the accumulated PAR over the day
@@ -96,6 +111,7 @@ def nutrient_mixology_control(ph_min, ph_max, ec_min, ec_max):
         ec_max (float): Maximum acceptable EC level in mS/cm.
     """
 
+    global ph_text, ec_text
     # Step 1: Start by adding Nutrient A
     print("Adding Nutrient A to the reservoir.")
     control_nutrient_pump_a(True)  # Activate pump for Nutrient A
@@ -130,11 +146,13 @@ def nutrient_mixology_control(ph_min, ph_max, ec_min, ec_max):
     while current_ph < ph_min or current_ph > ph_max:
         if current_ph < ph_min:
             print("pH too low. Adding pH up solution.")
+            ph_color = Color.Red
             control_nutrient_pump_b(True)  # Use pump B to add pH up solution
             time.sleep(2)  # Allow time for mixing
             control_nutrient_pump_b(False)
         elif current_ph > ph_max:
             print("pH too high. Adding pH down solution.")
+            ph_color = Color.Red
             control_nutrient_pump_c(True)  # Use pump C to add pH down solution
             time.sleep(2)  # Allow time for mixing
             control_nutrient_pump_c(False)
@@ -142,20 +160,27 @@ def nutrient_mixology_control(ph_min, ph_max, ec_min, ec_max):
         # Re-read the pH value
         current_ph = read_ph_level()
 
+    ph_color = Color.Green
+
     print(f"Final pH: {current_ph}")
 
     # Step 5: Adjust EC if it is outside the specified range
     while current_ec < ec_min or current_ec > ec_max:
         if current_ec < ec_min:
             print("EC too low. Adding more nutrient solution.")
+            ec_color = Color.Red
             control_nutrient_pump_a(True)  # Add more nutrient solution A
             time.sleep(3)  # Allow time for mixing
             control_nutrient_pump_a(False)
         elif current_ec > ec_max:
             print("EC too high. Adding distilled water to dilute.")
+            ec_color = Color.Red
             control_valve_distilled(True)  # Add distilled water to reduce EC
             time.sleep(3)  # Allow time for mixing
+
             control_valve_distilled(False)
+
+        ec_color = Color.Green
 
         # Re-read the EC value
         current_ec = read_ec_level()
@@ -244,21 +269,26 @@ def temperature_control(time,temperature_min, temperature_max, cooling_margin, h
     """
     # Read the current temperature from the sensor (placeholder function call)
     current_temp = read_temperature(time)
-    
+
+    global temp_color
     # Cooling Control: Turn on when above max, turn off only when below max - margin
     if current_temp > temperature_max:
         control_hvac(True)  # Turn on HVAC to cool
+        temp_color = Color.Red
         print(f"Temperature is {current_temp}°C, which is above {temperature_max}°C. Activating cooling.")
     elif current_temp < temperature_max - cooling_margin:
         control_hvac(False)  # Turn off cooling
+        temp_color = Color.Green
         print(f"Temperature is {current_temp}°C, which is below {temperature_max - cooling_margin}°C. Deactivating cooling.")
     
     # Heating Control: Turn on when below min, turn off only when above min + margin
     elif current_temp < temperature_min:
         control_hvac(True)  # Turn on HVAC to heat
+        temp_color = Color.Red
         print(f"Temperature is {current_temp}°C, which is below {temperature_min}°C. Activating heating.")
     elif current_temp > temperature_min + heating_margin:
         control_hvac(False)  # Turn off heating
+        temp_color = Color.Green
         print(f"Temperature is {current_temp}°C, which is above {temperature_min + heating_margin}°C. Deactivating heating.")
 
 
@@ -279,16 +309,20 @@ def humidity_control(time,humidity_min, humidity_max, upper_deadband):
     # Read the current humidity from the sensor (placeholder function call)
     current_humidity = read_humidity(time)
 
+    global hum_color
     # Lower Bound Error Handling: Raise a log if humidity is below the minimum threshold
     if current_humidity < humidity_min:
         print(f"Error: Humidity level is {current_humidity}%, below the minimum of {humidity_min}%. Please check the system.")
+        hum_color = Color.Red
 
     # Upper Bound Control: Turn on ventilation when above max, turn off only when below max - upper_deadband
     elif current_humidity > humidity_max:
         control_ventilation(True)  # Turn on ventilation to reduce humidity
+        hum_color = Color.Red
         print(f"Humidity is {current_humidity}%, above {humidity_max}%. Activating ventilation.")
     elif current_humidity < humidity_max - upper_deadband:
         control_ventilation(False)  # Turn off ventilation
+        hum_color = Color.Green
         print(f"Humidity is {current_humidity}%, below {humidity_max - upper_deadband}%. Deactivating ventilation.")
 
 # -----------------------------------------------------------------
@@ -308,11 +342,6 @@ def electricity_control():
 
 # Main Control Loop with Plant-Specific Data Integration
 
-temp_text = ""
-hum_text = ""
-ph_text = ""
-ec_text = ""
-
 def update_info(temperature, humidity, ph, ec):
     global temp_text, hum_text, ph_text, ec_text
     temp_text = str(temperature)
@@ -320,8 +349,11 @@ def update_info(temperature, humidity, ph, ec):
     ph_text = str(ph)
     ec_text = str(ec)
 
-def get_info():
+def get_textinfo():
     return temp_text, hum_text, ph_text, ec_text
+
+def get_colorinfo():
+    return temp_color, hum_color, ph_color, ec_color
 
 def control_loop_with_plant_data(plant_type: str, i: int):
 
