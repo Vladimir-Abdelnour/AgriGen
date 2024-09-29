@@ -1,0 +1,4 @@
+parameter,value
+dry_mass_increase_rate,1.39e-6
+plant_types,"[lettuce, broccoli]"
+current_plant_type,lettuce

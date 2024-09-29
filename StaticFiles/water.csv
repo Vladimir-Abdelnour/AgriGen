@@ -1,0 +1,7 @@
+parameter,value
+water_recycled,0.000139
+water_supply_rate,0.000278
+water_held_in_plants,0.1
+volume_nutrient_solution,2.0
+water_inflow_rate,0.000556
+water_outflow_rate,0.0005

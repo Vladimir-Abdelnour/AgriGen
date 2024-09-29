@@ -1,0 +1,6 @@
+parameter,value
+conversion_factor_plant_mass,20000000
+conversion_factor_elec_energy,0.25
+conversion_factor_co2,1.80
+conversion_factor_water_vapor,0.736
+conversion_factor_liquid_water,997.0

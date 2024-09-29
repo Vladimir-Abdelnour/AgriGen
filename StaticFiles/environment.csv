@@ -1,0 +1,8 @@
+parameter,value
+co2_in,0.04
+co2_out,0.016
+water_vapor_density_in,0.017
+water_vapor_density_out,0.010
+num_air_exchanges,0.000278
+volume_room_air,150.0
+temperature,298.15
