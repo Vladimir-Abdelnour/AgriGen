@@ -303,7 +303,6 @@ def push_data_to_database(current_par, current_ec, current_ph, current_co2, curr
         is_peak_hour (bool): Indicates whether it is currently a peak utility hour.
     """
 
-    print("Here")
     # Define the path to the output database
     db_path = os.path.join("Databases", "output.db")
     
@@ -326,7 +325,6 @@ def push_data_to_database(current_par, current_ec, current_ph, current_co2, curr
             is_peak_hour INTEGER
         )
     """)
-    print("Over Here")
     # Insert the current values into the table
     cursor.execute("""
         INSERT INTO control_data (current_par, current_ec, current_ph, current_co2, current_temp, current_humidity, daily_par_accumulation, is_peak_hour)
@@ -336,4 +334,3 @@ def push_data_to_database(current_par, current_ec, current_ph, current_co2, curr
     # Commit the changes and close the connection
     conn.commit()
     conn.close()
-    print("Data pushed to output.db successfully.")

@@ -246,18 +246,18 @@ def temperature_control(temperature_min, temperature_max, cooling_margin, heatin
     # Cooling Control: Turn on when above max, turn off only when below max - margin
     if current_temp > temperature_max:
         control_hvac(True)  # Turn on HVAC to cool
-        print(f"Temperature is {current_temp}°C, above {temperature_max}°C. Activating cooling.")
+        print(f"Temperature is {current_temp}°C, above {temperature_max-273}°C. Activating cooling.")
     elif current_temp < temperature_max - cooling_margin:
         control_hvac(False)  # Turn off cooling
-        print(f"Temperature is {current_temp}°C, below {temperature_max - cooling_margin}°C. Deactivating cooling.")
+        print(f"Temperature is {current_temp}°C, below {temperature_max-273 - cooling_margin}°C. Deactivating cooling.")
     
     # Heating Control: Turn on when below min, turn off only when above min + margin
     elif current_temp < temperature_min:
         control_hvac(True)  # Turn on HVAC to heat
-        print(f"Temperature is {current_temp}°C, below {temperature_min}°C. Activating heating.")
+        print(f"Temperature is {current_temp}°C, below {temperature_min-273}°C. Activating heating.")
     elif current_temp > temperature_min + heating_margin:
         control_hvac(False)  # Turn off heating
-        print(f"Temperature is {current_temp}°C, above {temperature_min + heating_margin}°C. Deactivating heating.")
+        print(f"Temperature is {current_temp}°C, above {temperature_min-273 + heating_margin}°C. Deactivating heating.")
 
 
 # -----------------------------------------------------------------
