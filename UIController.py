@@ -25,6 +25,7 @@ i = -1
 window = Tk()
 
 window.geometry("1920x1080")
+window.title('AgriOS')
 window.configure(bg = "#A3D69D")
 
 

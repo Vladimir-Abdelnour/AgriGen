@@ -30,6 +30,38 @@ image_index = 0
 
 API_ENDPOINT = 'https://plant.id/api/v3/identification'
 
+# Define the coordinates for Tempe, Arizona
+latitude = 33.4255
+longitude = -111.9400
+
+# Define the URL to get the weather forecast
+url = f"https://api.weather.gov/points/{latitude},{longitude}"
+
+# Get the forecast grid data (which contains temperature, humidity, sky cover, rain probability, etc.)
+response = requests.get(url)
+response.raise_for_status()  # Raise an error for bad responses
+forecast_url = response.json()['properties']['forecastGridData']
+
+# Fetch the forecast grid data
+forecast_response = requests.get(forecast_url)
+forecast_response.raise_for_status()  # Raise an error for bad responses
+forecast_data = forecast_response.json()
+
+# Extract the relevant weather properties
+properties_data = forecast_data['properties']
+
+# Extract the current date
+current_date = datetime.now().date()
+
+# Function to find today's weather data
+def get_weather_for_today(data, key):
+    if key in data:
+        for item in data[key]['values']:
+            forecast_date = datetime.fromisoformat(item['validTime'][:10]).date()
+            if forecast_date == current_date:
+                return item['value']
+    return None
+
 # Variable Definitions (Global Variables for State Tracking)
 daily_par_accumulation = 0  # Keeps track of the accumulated PAR over the day
 last_flush_date = datetime.now() - timedelta(weeks=2)  # Tracks the last water flushing date (start as 2 weeks ago)
@@ -604,6 +636,18 @@ def control_loop_with_plant_data(plant_type: str, i: int):
     global alert_messages
     if (probability > 0.4):
         alert_messages.append(f"The plant has a {probability*100:.2f}% chance of being unhealthy.")
+
+    # Fetch the required weather data
+    temperature_celsius = get_weather_for_today(properties_data, 'temperature')  # Temperature in Celsius
+    humidity = get_weather_for_today(properties_data, 'relativeHumidity')  # Relative Humidity in %
+    sky_cover = get_weather_for_today(properties_data, 'skyCover')  # Sky Cover in %
+    rain_probability = get_weather_for_today(properties_data, 'probabilityOfPrecipitation')  # Rain probability in %
+
+    if sky_cover is not None:
+        alert_messages.append(f"Sky Cover for Tempe: {sky_cover}%")
+
+    if rain_probability is not None:
+        alert_messages.append(f"Rain Probability: {rain_probability}%")
 
     update_info(int(current_temp), int(current_humidity), round(current_ph, 1), round(current_ec, 2))
 
