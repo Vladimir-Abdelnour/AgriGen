@@ -1,8 +1,8 @@
 parameter,value
-co2_max,0.04
-co2_min,0.016
-water_vapor_density_max,0.017
-water_vapor_density_min,0.010
+co2_max,1600
+co2_min,400
+water_vapor_density_in,0.017
+water_vapor_density_out,0.010
 num_air_exchanges,0.000278
 volume_room_air,150.0
 temperature_min,288.71

@@ -38,7 +38,7 @@ def read_from_api(location: str):
 # -----------------------------------------------------------------
 
 # Improved Lighting Control Function
-def lighting_control():
+def lighting_control(timestamp):
     """
     Improved control logic for managing LED lighting to supplement sunlight.
     - Measures accumulated PAR over the day.
@@ -55,7 +55,7 @@ def lighting_control():
         daily_par_accumulation = 0
     
     # Read current PAR level (µmol/m²/s)
-    current_par = read_par_level()
+    current_par = read_par_level(timestamp)
     
     # Daytime (6 AM - 6 PM): Accumulate light and consider weather conditions
     if 6 <= current_hour <= 18:
@@ -202,7 +202,7 @@ def water_flushing_control():
 # -----------------------------------------------------------------
 # Function: CO2 Enrichment Control with Asymmetric Deadband on Upper Bound
 # -----------------------------------------------------------------
-def co2_enrichment_control(co2_min, co2_max, co2_upper_margin):
+def co2_enrichment_control(timestamp, co2_min, co2_max, co2_upper_margin):
     """
     Control logic for CO2 enrichment with asymmetric deadband.
     - Turns on CO2 valve when below a certain level.
@@ -214,7 +214,9 @@ def co2_enrichment_control(co2_min, co2_max, co2_upper_margin):
         co2_upper_margin (float): Deadband margin for the upper bound to prevent frequent toggling.
     """
     # Read the current CO2 level from the sensor (placeholder function call)
-    current_co2 = read_co2_level()
+    current_co2 = read_co2_level(timestamp)
+    print(current_co2)
+    print(co2_min)
 
     # Activate CO2 valve when CO2 drops below the lower bound (co2_min)
     if current_co2 < co2_min:
@@ -229,7 +231,7 @@ def co2_enrichment_control(co2_min, co2_max, co2_upper_margin):
 # -----------------------------------------------------------------
 # Function: Temperature Control with Asymmetric Deadband for HVAC
 # -----------------------------------------------------------------
-def temperature_control(temperature_min, temperature_max, cooling_margin, heating_margin):
+def temperature_control(time,temperature_min, temperature_max, cooling_margin, heating_margin):
     """
     Control logic for temperature using HVAC system with asymmetric deadband control.
     - Uses deadband margins to avoid frequent toggling of HVAC system for cooling and heating.
@@ -241,29 +243,29 @@ def temperature_control(temperature_min, temperature_max, cooling_margin, heatin
         heating_margin (float): Deadband margin for heating to prevent frequent toggling.
     """
     # Read the current temperature from the sensor (placeholder function call)
-    current_temp = read_temperature()
+    current_temp = read_temperature(time)
     
     # Cooling Control: Turn on when above max, turn off only when below max - margin
     if current_temp > temperature_max:
         control_hvac(True)  # Turn on HVAC to cool
-        print(f"Temperature is {current_temp}°C, above {temperature_max-273}°C. Activating cooling.")
+        print(f"Temperature is {current_temp}°C, which is above {temperature_max}°C. Activating cooling.")
     elif current_temp < temperature_max - cooling_margin:
         control_hvac(False)  # Turn off cooling
-        print(f"Temperature is {current_temp}°C, below {temperature_max-273 - cooling_margin}°C. Deactivating cooling.")
+        print(f"Temperature is {current_temp}°C, which is below {temperature_max - cooling_margin}°C. Deactivating cooling.")
     
     # Heating Control: Turn on when below min, turn off only when above min + margin
     elif current_temp < temperature_min:
         control_hvac(True)  # Turn on HVAC to heat
-        print(f"Temperature is {current_temp}°C, below {temperature_min-273}°C. Activating heating.")
+        print(f"Temperature is {current_temp}°C, which is below {temperature_min}°C. Activating heating.")
     elif current_temp > temperature_min + heating_margin:
         control_hvac(False)  # Turn off heating
-        print(f"Temperature is {current_temp}°C, above {temperature_min-273 + heating_margin}°C. Deactivating heating.")
+        print(f"Temperature is {current_temp}°C, which is above {temperature_min + heating_margin}°C. Deactivating heating.")
 
 
 # -----------------------------------------------------------------
 # Function: Humidity Control with Asymmetric Deadband and Error Handling
 # -----------------------------------------------------------------
-def humidity_control(humidity_min, humidity_max, upper_deadband):
+def humidity_control(time,humidity_min, humidity_max, upper_deadband):
     """
     Control logic for humidity with asymmetric deadband and error handling.
     - Activates dehumidifier or ventilation based on humidity levels.
@@ -275,7 +277,7 @@ def humidity_control(humidity_min, humidity_max, upper_deadband):
         upper_deadband (float): Deadband margin for the upper bound to prevent frequent toggling.
     """
     # Read the current humidity from the sensor (placeholder function call)
-    current_humidity = read_humidity()
+    current_humidity = read_humidity(time)
 
     # Lower Bound Error Handling: Raise a log if humidity is below the minimum threshold
     if current_humidity < humidity_min:
@@ -334,8 +336,8 @@ def control_loop_with_plant_data(plant_type: str):
     floor_area = float(config['general']['floor_area'])
 
     # Environment
-    co2_in = float(config['environment']['co2_in'])
-    co2_out = float(config['environment']['co2_out'])
+    co2_min = float(config['environment']['co2_min'])
+    co2_max = float(config['environment']['co2_max'])
     water_vapor_density_in = float(config['environment']['water_vapor_density_in'])
     water_vapor_density_out = float(config['environment']['water_vapor_density_out'])
     temperature = float(config['environment']['temperature'])
@@ -386,9 +388,9 @@ def control_loop_with_plant_data(plant_type: str):
     water_vapor_loss = (volume_room_air * num_air_exchanges * (
                 water_vapor_density_in - water_vapor_density_out)) / floor_area
 
-    co2_loss = conversion_factor_co2 * num_air_exchanges * volume_room_air * (co2_in - co2_out) / floor_area
+    #co2_loss = conversion_factor_co2 * num_air_exchanges * volume_room_air * (co2_in - co2_out) / floor_area
 
-    co2_use_efficiency = (co2_cylinder - co2_loss) / (co2_cylinder + co2_human_respiration)
+    #co2_use_efficiency = (co2_cylinder - co2_loss) / (co2_cylinder + co2_human_respiration)
 
     light_energy_efficiency_parl = (
                                                conversion_factor_plant_mass * dry_mass_increase_rate) / photosynthetic_radiation_lamps
@@ -444,17 +446,35 @@ def control_loop_with_plant_data(plant_type: str):
     ec_min, ec_max, ph_min, ph_max, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max= read_plant_data(plant_type)
     
     # Main control loop to manage all subsystems
-    while True:
+    conn = sqlite3.connect("Databases/static.db")
+    cursor = conn.cursor()
+
+    # Query to get the first timestamp
+    cursor.execute("SELECT timestamp FROM sensor_data")
+    timestamp = cursor.fetchall()
+
+    # Check if a result was returned
+    if timestamp:
+        print(len(timestamp))
+    else:
+        print("No data found in the sensor_data table.")
+
+    # Close the database connection
+    conn.close()
+    current_time=timestamp[0][0]
+
+    i = 0
+    while i<len(timestamp):
         # Simulated sensor readings for demonstration purposes
-        current_par = read_par_level()         # Simulate a PAR sensor reading
-        current_ec = read_ec_level()           # Simulate an EC sensor reading
-        current_ph = read_ph_level()           # Simulate a pH sensor reading
-        current_co2 = read_co2_level()         # Simulate a CO2 sensor reading
-        current_temp = read_temperature()      # Simulate a temperature sensor reading
-        current_humidity = read_humidity()     # Simulate a humidity sensor reading
+        current_par = read_par_level(current_time)         # Simulate a PAR sensor reading
+        current_ec = read_ec_level(current_time)           # Simulate an EC sensor reading
+        current_ph = read_ph_level(current_time)           # Simulate a pH sensor reading
+        current_co2 = read_co2_level(current_time)         # Simulate a CO2 sensor reading
+        current_temp = read_temperature(current_time)      # Simulate a temperature sensor reading
+        current_humidity = read_humidity(current_time)     # Simulate a humidity sensor reading
 
         #Execute control functions
-        lighting_control()
+        lighting_control(current_time)
         print("Nutrients Mixing")
         #commented out for temporary reasons
         #nutrient_mixology_control(ph_min, ph_max, ec_min, ec_max)
@@ -463,11 +483,11 @@ def control_loop_with_plant_data(plant_type: str):
         print('Flushing')
         water_flushing_control()
         print('CO2 Enrichment')
-        co2_enrichment_control(co2_min, co2_max,co2_upper_margin=0.02) # Assuming a 0.02 margin for CO2 control
+        co2_enrichment_control(current_time, co2_min, co2_max,co2_upper_margin=0.02) # Assuming a 0.02 margin for CO2 control
         print('Temperature')
-        temperature_control(temperature_min, temperature_max, cooling_margin=2, heating_margin=2) # Example margins
+        temperature_control(current_time, temperature_min, temperature_max, cooling_margin=2, heating_margin=2) # Example margins
         print('Humidity')
-        humidity_control(humidity_min, humidity_max, upper_deadband=5) # Example deadband margin for humidity
+        humidity_control(current_time,humidity_min, humidity_max, upper_deadband=5) # Example deadband margin for humidity
         print('Electricity')
         electricity_control()
 
@@ -486,6 +506,8 @@ def control_loop_with_plant_data(plant_type: str):
         print('over here')
         # Wait for a short interval before checking the status again
         time.sleep(1)
+        i=i+1
+        current_time = timestamp[i][0]
 
 
 

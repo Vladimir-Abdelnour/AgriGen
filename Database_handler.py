@@ -129,31 +129,26 @@ def create_static_db(csv_folder, db_name='static.db'):
     # Create and populate sensor_data table
     cursor.execute('''CREATE TABLE IF NOT EXISTS sensor_data
                       (timestamp TEXT, 
-                       ec REAL, 
-                       ph REAL, 
-                       co2_in REAL, 
-                       co2_out REAL, 
-                       water_vapor_density_in REAL, 
-                       water_vapor_density_out REAL, 
-                       temperature REAL, 
-                       photosynthetic_radiation_lamps REAL, 
-                       photosynthetic_radiation_surface REAL, 
-                       water_recycled REAL, 
-                       water_supply_rate REAL, 
-                       ion_concentration_in REAL, 
-                       ion_concentration_out REAL, 
-                       elec_lamps REAL, 
-                       elec_air_conditioners REAL, 
-                       elec_water_pumps REAL, 
-                       co2_human_respiration REAL, 
-                       co2_cylinder REAL)''')
+                       water_level_nutrient_a REAL,
+                       water_level_nutrient_b REAL,
+                       water_level_nutrient_c REAL,
+                       water_level_distilled REAL,
+                       water_level_nutrient_rich REAL,
+                       ph_level REAL,
+                       ec_level REAL,
+                       co2_level REAL,
+                       temperature REAL,
+                       humidity REAL,
+                       airflow_rate REAL,
+                       par_level REAL,
+                       energy_usage REAL)''')
 
     with open(os.path.join(csv_folder, 'sensors.csv'), 'r') as file:
         csv_reader = csv.reader(file)
         next(csv_reader)  # Skip header
         for row in csv_reader:
             cursor.execute('''INSERT INTO sensor_data VALUES 
-                              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', row)
+                              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', row)
 
     conn.commit()
     conn.close()
