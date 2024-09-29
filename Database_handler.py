@@ -99,3 +99,100 @@ def table_exists(db_name, table_name):
     result = cursor.fetchone()
     conn.close()
     return result is not None
+
+
+def create_static_db(csv_folder, db_name='static.db'):
+    # Ensure the Databases folder exists
+    if not os.path.exists('Databases'):
+        os.makedirs('Databases')
+
+    # Connect to the database in the Databases folder
+    db_path = os.path.join('Databases', 'static.db')
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # List of CSV files to process (excluding sensors.csv)
+    csv_files = ['general.csv', 'environment.csv', 'lighting.csv', 'water.csv', 'nutrients.csv',
+                 'energy.csv', 'plants.csv', 'co2.csv', 'constants.csv', 'simulation.csv']
+
+    for csv_file in csv_files:
+        table_name = os.path.splitext(csv_file)[0]
+        cursor.execute(f'''CREATE TABLE IF NOT EXISTS {table_name}
+                          (parameter TEXT PRIMARY KEY, value REAL)''')
+
+        with open(os.path.join(csv_folder, csv_file), 'r') as file:
+            csv_reader = csv.reader(file)
+            next(csv_reader)  # Skip header
+            for row in csv_reader:
+                cursor.execute(f"INSERT OR REPLACE INTO {table_name} (parameter, value) VALUES (?, ?)", row)
+
+    # Create and populate sensor_data table
+    cursor.execute('''CREATE TABLE IF NOT EXISTS sensor_data
+                      (timestamp TEXT, 
+                       ec REAL, 
+                       ph REAL, 
+                       co2_in REAL, 
+                       co2_out REAL, 
+                       water_vapor_density_in REAL, 
+                       water_vapor_density_out REAL, 
+                       temperature REAL, 
+                       photosynthetic_radiation_lamps REAL, 
+                       photosynthetic_radiation_surface REAL, 
+                       water_recycled REAL, 
+                       water_supply_rate REAL, 
+                       ion_concentration_in REAL, 
+                       ion_concentration_out REAL, 
+                       elec_lamps REAL, 
+                       elec_air_conditioners REAL, 
+                       elec_water_pumps REAL, 
+                       co2_human_respiration REAL, 
+                       co2_cylinder REAL)''')
+
+    with open(os.path.join(csv_folder, 'sensors.csv'), 'r') as file:
+        csv_reader = csv.reader(file)
+        next(csv_reader)  # Skip header
+        for row in csv_reader:
+            cursor.execute('''INSERT INTO sensor_data VALUES 
+                              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', row)
+
+    conn.commit()
+    conn.close()
+
+
+def get_config_from_static_db():
+    db_path = os.path.join('Databases', 'static.db')
+    if not os.path.exists(db_path):
+        raise FileNotFoundError(f"The database file {db_path} does not exist.")
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    config = {}
+    tables = ['general', 'environment', 'lighting', 'water', 'nutrients', 'energy', 'plants', 'co2', 'constants',
+              'simulation']
+
+    # First, let's check which tables actually exist
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    existing_tables = [row[0] for row in cursor.fetchall()]
+    print(f"Existing tables in the database: {existing_tables}")
+
+    for table in tables:
+        if table in existing_tables:
+            try:
+                cursor.execute(f"SELECT parameter, value FROM {table}")
+                config[table] = {row[0]: row[1] for row in cursor.fetchall()}
+            except sqlite3.OperationalError as e:
+                print(f"Error reading from table {table}: {e}")
+        else:
+            print(f"Table {table} does not exist in the database.")
+
+    conn.close()
+    return config
+
+
+def get_sensor_data(start_time, end_time, db_name='static.db'):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM sensor_data WHERE timestamp BETWEEN ? AND ?", (start_time, end_time))
+    sensor_data = cursor.fetchall()
+    conn.close()
+    return sensor_data

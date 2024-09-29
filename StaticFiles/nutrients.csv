@@ -1,0 +1,10 @@
+parameter,value
+ion_concentration_in,0.01
+ion_concentration_out,0.005
+lettuce_ratio,"[1, 0.5, 1.5]"
+broccoli_ratio,"[2, 1, 2]"
+tank1_concentration,10
+tank2_concentration,10
+tank3_concentration,10
+lettuce_target_ec,1.2
+broccoli_target_ec,1.8

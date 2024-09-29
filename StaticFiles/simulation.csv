@@ -1,0 +1,5 @@
+parameter,value
+delta_t,360
+t,0
+start_date,2024-09-01 00:00:00
+end_date,2024-09-30 23:59:59
