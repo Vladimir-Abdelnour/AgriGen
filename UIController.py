@@ -445,27 +445,37 @@ def plant_health(temp_color: Color, hum_color: Color, ph_color: Color, ec_color:
 
 start_time = [0,0,0]
 def set_alerts(alert_messages):
+    global start_time
 
-    global i, start_time
+    # Check for each alert slot and set the message if it's empty
+    if canvas.itemcget(alert1_text, "text") == "" and alert_messages:
+        canvas.itemconfig(alert1_text, text=alert_messages.pop(0))  # Show and remove the first alert
+        start_time[0] = time.time()  # Set the start time for alert1
+    elif canvas.itemcget(alert2_text, "text") == "" and alert_messages:
+        canvas.itemconfig(alert2_text, text=alert_messages.pop(0))  # Show and remove the first alert
+        start_time[1] = time.time()  # Set the start time for alert2
+    elif canvas.itemcget(alert3_text, "text") == "" and alert_messages:
+        canvas.itemconfig(alert3_text, text=alert_messages.pop(0))  # Show and remove the first alert
+        start_time[2] = time.time()  # Set the start time for alert3
 
-    if canvas.itemcget(alert1_text, "text") == "":
-        canvas.itemconfig(alert1_text, text=alert_messages[-1])
+    # Check if any alert has expired (10 seconds in this example) and clear it
+    if time.time() - start_time[0] >= 10 and canvas.itemcget(alert1_text, "text") != "":
+        canvas.itemconfig(alert1_text, text="")  # Clear alert1 when expired
+    if time.time() - start_time[1] >= 10 and canvas.itemcget(alert2_text, "text") != "":
+        canvas.itemconfig(alert2_text, text="")  # Clear alert2 when expired
+    if time.time() - start_time[2] >= 10 and canvas.itemcget(alert3_text, "text") != "":
+        canvas.itemconfig(alert3_text, text="")  # Clear alert3 when expired
+
+    # After clearing, check if any slot is empty and refill it from the remaining alerts
+    if canvas.itemcget(alert1_text, "text") == "" and alert_messages:
+        canvas.itemconfig(alert1_text, text=alert_messages.pop(0))
         start_time[0] = time.time()
-    elif canvas.itemcget(alert2_text, "text") == "":
-        canvas.itemconfig(alert2_text, text=alert_messages[-1])
+    if canvas.itemcget(alert2_text, "text") == "" and alert_messages:
+        canvas.itemconfig(alert2_text, text=alert_messages.pop(0))
         start_time[1] = time.time()
-    elif canvas.itemcget(alert3_text, "text") == "":
-        canvas.itemconfig(alert3_text, text=alert_messages[-1])
+    if canvas.itemcget(alert3_text, "text") == "" and alert_messages:
+        canvas.itemconfig(alert3_text, text=alert_messages.pop(0))
         start_time[2] = time.time()
-    else:
-        i -= 1
-
-    if time.time() - start_time[0] >= 10:
-        canvas.itemconfig(alert1_text, text="")
-    elif time.time() - start_time[1] >= 10:
-        canvas.itemconfig(alert2_text, text="")
-    elif time.time() - start_time[2] >= 10:
-        canvas.itemconfig(alert3_text, text="")
 
 
 
