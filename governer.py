@@ -2,6 +2,7 @@
 import time  # For timer and control loop
 import random  # For simulating sensor readings
 from datetime import datetime, timedelta  # For managing time and scheduling
+from Sensors.sensors import*
 
 # Variable Definitions (Global Variables for State Tracking)
 daily_par_accumulation = 0  # Keeps track of the accumulated PAR over the day
@@ -44,7 +45,7 @@ def lighting_control():
     """
     global daily_par_accumulation
     current_hour = datetime.now().hour
-    cloudiness = get_weather_forecast()  # Get cloudiness data from weather API
+    cloudiness = read_from_api("Arizona")  # Get cloudiness data from weather API
 
     # Start a new day: Reset the accumulated PAR at midnight
     if current_hour == 0:
@@ -78,7 +79,7 @@ def lighting_control():
 # -----------------------------------------------------------------
 # Function: Nutrient Mixology Control with Proper Mixing Order and EC/pH Adjustment
 # -----------------------------------------------------------------
-def nutrient_mixology_control_v2(ph_min, ph_max, ec_min, ec_max):
+def nutrient_mixology_control(ph_min, ph_max, ec_min, ec_max):
     """
     Control logic for mixing nutrient solutions in hydroponic systems.
     - Ensures proper mixing order: Nutrient A -> Nutrient B -> Nutrient C.
@@ -196,9 +197,6 @@ def water_flushing_control():
         last_flush_date = datetime.now()  # Update last flush date
 
 # -----------------------------------------------------------------
-# Function: CO2 Enrichment Control
-# -----------------------------------------------------------------
-# -----------------------------------------------------------------
 # Function: CO2 Enrichment Control with Asymmetric Deadband on Upper Bound
 # -----------------------------------------------------------------
 def co2_enrichment_control(co2_min, co2_max, co2_upper_margin):
@@ -225,10 +223,6 @@ def co2_enrichment_control(co2_min, co2_max, co2_upper_margin):
         control_co2_valve(False)  # Close CO2 valve to prevent oversaturation
         print(f"CO2 level is {current_co2} ppm, above {co2_max + co2_upper_margin} ppm. Deactivating CO2 enrichment.")
 
-
-# -----------------------------------------------------------------
-# Function: Temperature Control
-# -----------------------------------------------------------------
 # -----------------------------------------------------------------
 # Function: Temperature Control with Asymmetric Deadband for HVAC
 # -----------------------------------------------------------------
@@ -292,8 +286,6 @@ def humidity_control(humidity_min, humidity_max, upper_deadband):
         control_ventilation(False)  # Turn off ventilation
         print(f"Humidity is {current_humidity}%, below {humidity_max - upper_deadband}%. Deactivating ventilation.")
 
-
-
 # -----------------------------------------------------------------
 # Function: Electricity Control
 # -----------------------------------------------------------------
@@ -309,21 +301,24 @@ def electricity_control():
     else:
         control_energy_selling(False)  # Disable energy selling
 
-# -----------------------------------------------------------------
-# Main Control Loop
-# -----------------------------------------------------------------
-def control_loop():
+# Main Control Loop with Plant-Specific Data Integration
+
+def control_loop_with_plant_data(plant_type: str):
     """
-    Main control loop for AgriGen.
+    Main control loop for AgriGen with plant-specific data integration.
+    - Reads plant-specific data from the database based on the plant type.
     - Calls individual subsystem control functions continuously.
+    
+    Args:
+        plant_type (str): The type of plant being cultivated (e.g., "Tomato").
     """
-
-    control_loop_with_plant_data("Tomato")
-
-
+    # Read plant-specific control parameters from the database
+    ph_min, ph_max, ec_min, ec_max= read_plant_data(plant_type)
+    
+    # Main control loop to manage all subsystems
     while True:
         lighting_control()
-        nutrient_mixology_control()
+        nutrient_mixology_control(ph_min, ph_max, ec_min, ec_max)
         irrigation_control()
         water_flushing_control()
         co2_enrichment_control()
@@ -334,5 +329,6 @@ def control_loop():
         # Wait for a short interval before checking the status again
         time.sleep(1)
 
-# Uncomment the following line to run the control loop (if real-time execution is intended)
-# control_loop()
+
+
+control_loop_with_plant_data("lettuce")

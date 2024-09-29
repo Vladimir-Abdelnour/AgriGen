@@ -160,3 +160,67 @@ def read_energy_usage():
     # This will be replaced by actual sensor data integration in the future
     energy_usage = 50.0  # Example value in kWh
     return energy_usage
+
+# Mock function to simulate database read for plant-specific control parameters
+
+# Import necessary libraries
+import sqlite3  # Assuming SQLite for database, replace with appropriate library for your database
+
+# Function to read plant-specific data and set control parameters
+def read_plant_data(plant_type: str):
+    """
+    Reads plant-specific data from the database and sets control parameters.
+    
+    Args:
+        plant_type (str): The type of plant (e.g., "Tomato", "Lettuce").
+    
+    This function connects to the 'sensory_data' database and retrieves values for:
+    - target_ec, target_ph, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max
+    """
+    global target_ec, target_ph, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max
+    
+    # Connect to the database (mock connection)
+    # Replace 'sensory_data.db' with actual database name or connection details
+    conn = sqlite3.connect("sensory_data.db")  # Mock database connection
+    cursor = conn.cursor()
+
+    try:
+        # Query to retrieve plant-specific data based on plant_type
+        cursor.execute("""
+            SELECT target_ec_min, target_ec_max, target_ph_min, target_ph_max, co2_min, co2_max,
+                   temperature_min, temperature_max, humidity_min, humidity_max
+            FROM plant_parameters
+            WHERE plant_type = ?
+        """, (plant_type,))
+        
+        # Fetch the result
+        result = cursor.fetchone()
+
+        # Check if data was found for the specified plant type
+        if result:
+            # Unpack the result and assign to global variables
+            (target_ec_min, target_ec_max, target_ph_min, target_ph_max,
+             co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max) = result
+            
+            # Print the results to verify (can be logged or assigned as needed)
+            print(f"Plant Type: {plant_type}")
+            print(f"EC Range: {target_ec_min} - {target_ec_max} mS/cm")
+            print(f"pH Range: {target_ph_min} - {target_ph_max}")
+            print(f"CO2 Range: {co2_min} - {co2_max} ppm")
+            print(f"Temperature Range: {temperature_min} - {temperature_max} °C")
+            print(f"Humidity Range: {humidity_min} - {humidity_max} %")
+            
+        else:
+            print(f"No data found for plant type: {plant_type}")
+    
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+    
+    finally:
+        # Close the database connection
+        conn.close()
+
+# Example usage of the function with a mock plant type (replace with real plant types)
+# Uncomment the line below to use the function in your environment:
+# read_plant_data("Tomato")
+
