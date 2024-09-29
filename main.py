@@ -4,7 +4,6 @@ import os
 import csv
 import ast
 from Database_handler import *
-from Config.config_parser import get_config
 
 
 # def mix_nutrients(db_name, config):
