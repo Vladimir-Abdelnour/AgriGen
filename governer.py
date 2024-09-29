@@ -5,8 +5,12 @@ from datetime import datetime, timedelta  # For managing time and scheduling
 from Sensors.sensors import*
 from Database_handler import *
 from Utils.controls import *
+from PIL import Image, ImageTk
 import os
 from enum import Enum
+import requests
+import json
+import creds
 
 class Color(Enum):
     Red = "#C90303"
@@ -21,6 +25,10 @@ temp_color = Color.Green
 hum_color = Color.Green
 ph_color = Color.Green
 ec_color = Color.Green
+alert_messages = []
+image_index = 0
+
+API_ENDPOINT = 'https://plant.id/api/v3/identification'
 
 # Variable Definitions (Global Variables for State Tracking)
 daily_par_accumulation = 0  # Keeps track of the accumulated PAR over the day
@@ -32,6 +40,38 @@ next_irrigation_time = time.time() + irrigation_interval  # Schedule next irriga
 # Additional control variables for state
 is_peak_hour = False  # Flag to indicate if it's currently peak utility hour
 current_time = time.time()  # Initialize current time
+
+def identify_plant_health(image_path):
+    # Open the image file in binary mode
+    with open(image_path, 'rb') as image_file:
+        #Prepare the headers with the API key for authentication
+        headers = {
+            'Api-Key': creds.API_KEY
+        }
+
+        #Prepare the data for the request
+        files = {
+            'images': image_file  # The image file for plant identification
+        }
+
+        #Adjust the data parameters based on available modifiers
+        data = {
+            'health': 'all',  # Get both plant species classification and health assessment
+            #'classification_level': 'species',  # Restrict classification to species level
+            #'similar_images': 'true'  # Get similar images for the suggestions
+        }
+
+        #Make the POST request to the API
+        response = requests.post(API_ENDPOINT, headers=headers, files=files, data=data)
+
+        #Check the response
+        if response.status_code == 200 or response.status_code == 201:
+            #Parse the JSON responses
+            result = response.json()
+            return result
+        else:
+            #Handle the error
+            return f"Error: {response.status_code}, {response.text}"
 
 #TO BE BUILD BY GEETH
 def read_from_api(location: str):
@@ -216,6 +256,8 @@ def water_flushing_control():
     global last_flush_date
     if datetime.now() >= last_flush_date + timedelta(weeks=2):
         # Activate valves and pumps to flush the entire system
+        global alert_messages
+        alert_messages.append("Flushing the Entire System and Restarting")
         control_valve_nutrient_rich(True)  # Open nutrient-rich tank valve
         activate_pump(True)  # Activate pump to flush out the system
         time.sleep(6)  # Flush for 1 minute (placeholder value)
@@ -312,6 +354,8 @@ def humidity_control(time,humidity_min, humidity_max, upper_deadband):
     global hum_color
     # Lower Bound Error Handling: Raise a log if humidity is below the minimum threshold
     if current_humidity < humidity_min:
+        global alert_messages
+        alert_messages.append(f"Humidity level is very low at {current_humidity}%.")
         print(f"Error: Humidity level is {current_humidity}%, below the minimum of {humidity_min}%. Please check the system.")
         hum_color = Color.Red
 
@@ -348,6 +392,9 @@ def update_info(temperature, humidity, ph, ec):
     hum_text = str(humidity)
     ph_text = str(ph)
     ec_text = str(ec)
+
+def get_alerts():
+    return alert_messages
 
 def get_textinfo():
     return temp_text, hum_text, ph_text, ec_text
@@ -540,6 +587,23 @@ def control_loop_with_plant_data(plant_type: str, i: int):
     humidity_control(current_time,humidity_min, humidity_max, upper_deadband=5) # Example deadband margin for humidity
     print('Electricity')
     electricity_control()
+
+    #Monitor Plant Health Constantly and Report any issues
+
+    #Select an image from the images folder
+    images_folder = "images"
+    image_files = [f for f in os.listdir(images_folder)]
+    global image_index
+    image_path = os.path.join(images_folder, image_files[image_index])
+    image_index = (image_index + 1) % len(image_files)
+
+    plant_health_result = identify_plant_health(image_path)
+    fin_result = json.dumps(plant_health_result)
+    fin_result = json.loads(fin_result)
+    probability = float(fin_result['result']['is_healthy']['probability'])
+    global alert_messages
+    if (probability > 0.4):
+        alert_messages.append(f"The plant has a {probability*100:.2f}% chance of being unhealthy.")
 
     update_info(int(current_temp), int(current_humidity), round(current_ph, 1), round(current_ec, 2))
 
