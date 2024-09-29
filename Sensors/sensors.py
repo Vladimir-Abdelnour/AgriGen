@@ -1,165 +1,86 @@
 # Updated Sensor Reading Functions with Database Integration Comments for AgriGen
 import sqlite3
+
+# Helper function to query the database for specific sensor data
+def get_sensor_data(parameter, timestamp):
+    """
+    Retrieves the value for a given column (parameter) and timestamp from the sensor_data table.
+
+    Args:
+        parameter (str): The column name in the sensor_data table (e.g., 'water_level_nutrient_a').
+        timestamp (str): The timestamp value for the specific row (e.g., '2024-09-01 00:00:00').
+
+    Returns:
+        float: The sensor value for the specified parameter and timestamp, or None if not found.
+    """
+    conn = sqlite3.connect("Databases/static.db")  # Adjust path as necessary
+    cursor = conn.cursor()
+    sensor_value = None
+
+    try:
+        # Use the parameter as the column name and timestamp to filter the row
+        query = f"SELECT {parameter} FROM sensor_data WHERE timestamp = ?"
+        cursor.execute(query, (timestamp,))
+        result = cursor.fetchone()
+        
+        # If result is found, extract and return the value
+        if result:
+            sensor_value = float(result[0])  # Convert the result to float
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        conn.close()
+    
+    return sensor_value
+
+# Updated sensor functions with database integration
+
 # Nutrient Tank Water Levels
-def read_water_level_nutrient_a():
-    """
-    Reads the current water level in Nutrient Tank A.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: Water level in liters (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    water_level_a = 150.0  # Example value in liters
-    return water_level_a
+def read_water_level_nutrient_a(timestamp):
+    return get_sensor_data('water_level_nutrient_a', timestamp)
 
-def read_water_level_nutrient_b():
-    """
-    Reads the current water level in Nutrient Tank B.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: Water level in liters (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    water_level_b = 145.0  # Example value in liters
-    return water_level_b
+def read_water_level_nutrient_b(timestamp):
+    return get_sensor_data('water_level_nutrient_b', timestamp)
 
-def read_water_level_nutrient_c():
-    """
-    Reads the current water level in Nutrient Tank C.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: Water level in liters (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    water_level_c = 155.0  # Example value in liters
-    return water_level_c
+def read_water_level_nutrient_c(timestamp):
+    return get_sensor_data('water_level_nutrient_c', timestamp)
 
-def read_water_level_distilled():
-    """
-    Reads the current water level in the Distilled Water Tank.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: Water level in liters (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    water_level_distilled = 500.0  # Example value in liters
-    return water_level_distilled
+def read_water_level_distilled(timestamp):
+    return get_sensor_data('water_level_distilled', timestamp)
 
-def read_water_level_nutrient_rich():
-    """
-    Reads the current water level in the Nutrient-Rich Tank.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: Water level in liters (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    water_level_nutrient_rich = 450.0  # Example value in liters
-    return water_level_nutrient_rich
+def read_water_level_nutrient_rich(timestamp):
+    return get_sensor_data('water_level_nutrient_rich', timestamp)
 
 # Nutrient Mixology Sensor Functions
-def read_ph_level():
-    """
-    Reads the pH level of the nutrient solution.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: pH level (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    ph_level = 5.8  # Example value for pH
-    return ph_level
+def read_ph_level(timestamp):
+    return get_sensor_data('ph_level', timestamp)
 
-def read_ec_level():
-    """
-    Reads the Electrical Conductivity (EC) level of the nutrient solution.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: EC level in mS/cm (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    ec_level = 1.6  # Example value in mS/cm
-    return ec_level
+def read_ec_level(timestamp):
+    return get_sensor_data('ec_level', timestamp)
 
 # Environment Control Sensor Functions
-def read_co2_level():
-    """
-    Reads the CO2 concentration level in the greenhouse.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: CO2 concentration in ppm (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    co2_level = 400.0  # Example value in ppm
-    return co2_level
+def read_co2_level(timestamp):
+    return get_sensor_data('co2_level', timestamp)
 
-def read_temperature():
-    """
-    Reads the temperature from various points in the greenhouse.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: Temperature in Celsius (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    temperature = 22.5  # Example value in °C
-    return temperature
+def read_temperature(timestamp):
+    return get_sensor_data('temperature', timestamp)
 
-def read_humidity():
-    """
-    Reads the humidity level from various points in the greenhouse.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: Humidity level in percentage (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    humidity = 60.0  # Example value in %
-    return humidity
+def read_humidity(timestamp):
+    return get_sensor_data('humidity', timestamp)
 
-def read_airflow():
-    """
-    Reads the airflow rate from the ventilation system.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: Airflow rate in cubic meters per second (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    airflow_rate = 1.2  # Example value in m³/s
-    return airflow_rate
+def read_airflow(timestamp):
+    return get_sensor_data('airflow_rate', timestamp)
 
 # Lighting Control Sensor Functions
-def read_par_level():
-    """
-    Reads the Photosynthetically Active Radiation (PAR) levels.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: PAR level in µmol/m²/s (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    par_level = 800  # Example value in µmol/m²/s
-    return par_level
+def read_par_level(timestamp):
+    return get_sensor_data('par_level',timestamp)
 
 # Energy Control Sensor Functions
-def read_energy_usage():
-    """
-    Reads the real-time energy usage of the greenhouse system.
-    Currently sourced from the 'sensory_data' database.
-    Returns:
-        float: Energy usage in kWh (placeholder value).
-    """
-    # Placeholder for actual database reading
-    # This will be replaced by actual sensor data integration in the future
-    energy_usage = 50.0  # Example value in kWh
-    return energy_usage
+def read_energy_usage(timestamp):
+    return get_sensor_data('energy_usage', timestamp)
+
 
 # Modified function with updated variable names and return statement
 def read_plant_data(plant_type: str):
