@@ -1,7 +1,7 @@
 # config_parser.py
 
 import configparser
-
+import ast
 
 def get_config(config_file_path):
     config = configparser.ConfigParser()
@@ -43,6 +43,13 @@ def get_config(config_file_path):
         'Nutrients': {
             'ion_concentration_in': config.getfloat('Nutrients', 'ion_concentration_in'),
             'ion_concentration_out': config.getfloat('Nutrients', 'ion_concentration_out'),
+            'lettuce_ratio': ast.literal_eval(config.get('Nutrients', 'lettuce_ratio')),
+            'broccoli_ratio': ast.literal_eval(config.get('Nutrients', 'broccoli_ratio')),
+            'lettuce_target_ec': config.getfloat('Nutrients', 'lettuce_target_ec'),
+            'broccoli_target_ec': config.getfloat('Nutrients', 'broccoli_target_ec'),
+            'tank1_concentration': config.getfloat('Nutrients', 'tank1_concentration'),
+            'tank2_concentration': config.getfloat('Nutrients', 'tank2_concentration'),
+            'tank3_concentration': config.getfloat('Nutrients', 'tank3_concentration'),
         },
         'Energy': {
             'elec_water_pumps': config.getfloat('Energy', 'elec_water_pumps'),
@@ -52,6 +59,8 @@ def get_config(config_file_path):
         },
         'Plants': {
             'dry_mass_increase_rate': config.getfloat('Plants', 'dry_mass_increase_rate'),
+            'current_plant_type': config.get('Plants', 'current_plant_type'),
+            'plant_types': config.get('Plants', 'plant_types'),
         },
         'CO2': {
             'co2_human_respiration': config.getfloat('CO2', 'co2_human_respiration'),

@@ -1,43 +1,71 @@
 # Importing libraries
 import time
 import os
-from Database_handler import setup_database, get_latest_readings, get_target_values, log_action
+import csv
+from Database_handler import setup_database, get_latest_readings, get_target_values, log_action, log_nutrient_mix, export_nutrient_mix_to_csv
 from Config.config_parser import get_config
 
 
-def mix_nutrients(db_name):
-    target_ec, target_ph = get_target_values(db_name)
-    if target_ec is None or target_ph is None:
-        log_action(db_name, "Error: No target values found in database")
-        return
+def mix_nutrients(db_name, config):
+    plant_type = config['Plants']['current_plant_type']
+    number_of_plants = config['General']['number_of_plants']
 
-    log_action(db_name, "Nutrient mixing started")
+    tank1_volume, tank2_volume, tank3_volume, target_ec = calculate_nutrient_mix(plant_type, number_of_plants, config)
 
-    while True:
-        current_ec, current_ph = get_latest_readings(db_name)
-        if current_ec is None or current_ph is None:
-            log_action(db_name, "Error: No sensor readings found in database")
-            break
+    # Simulate mixing process
+    main_tank_ec = (tank1_volume * config['Nutrients']['tank1_concentration'] +
+                    tank2_volume * config['Nutrients']['tank2_concentration'] +
+                    tank3_volume * config['Nutrients']['tank3_concentration']) / (
+                               tank1_volume + tank2_volume + tank3_volume)
 
-        if current_ec < target_ec:
-            log_action(db_name, "Adding nutrient A")
-            time.sleep(0.5)  # Simulate pump action
-            log_action(db_name, "Adding nutrient B")
-            time.sleep(0.5)  # Simulate pump action
-        elif current_ph > target_ph:
-            log_action(db_name, "Adding pH down solution")
-            time.sleep(0.2)  # Simulate pump action
-        elif current_ph < target_ph:
-            log_action(db_name, "Adding pH up solution")
-            time.sleep(0.2)  # Simulate pump action
-        else:
-            log_action(db_name, "Nutrient levels and pH in target range")
-            break
+    # Log the nutrient mix
+    log_nutrient_mix(db_name, plant_type, number_of_plants, tank1_volume, tank2_volume, tank3_volume, main_tank_ec)
 
-        time.sleep(60)  # Wait for mixing
+    print(f"Mixed nutrients for {number_of_plants} {plant_type} plants.")
+    print(f"Tank 1: {tank1_volume:.2f}L, Tank 2: {tank2_volume:.2f}L, Tank 3: {tank3_volume:.2f}L")
+    print(f"Main tank EC: {main_tank_ec:.2f} mS/cm (Target: {target_ec} mS/cm)")
 
-    log_action(db_name, "Nutrient mixing finished")
 
+def calculate_nutrient_mix(plant_type, plant_types, number_of_plants, config):
+    if plant_type in plant_types:
+        ratio = config['Nutrients'][plant_type+'_ratio']
+        target_ec = config['Nutrients'][plant_type+'_target_ec']
+    else:
+        print(plant_type)
+        print("lettuce")
+        print(type("lettuce"))
+        print(type(plant_type))
+        raise ValueError("Unknown plant type")
+
+    total_ratio = sum(ratio)
+    total_volume = number_of_plants * 0.1  # Assume 0.1L per plant
+
+    tank1_volume = (ratio[0] / total_ratio) * total_volume
+    tank2_volume = (ratio[1] / total_ratio) * total_volume
+    tank3_volume = (ratio[2] / total_ratio) * total_volume
+
+    return tank1_volume, tank2_volume, tank3_volume, target_ec
+
+
+def mix_nutrients(db_name, config):
+    plant_type = config['Plants']['current_plant_type']
+    plant_types = config['Plants']['plant_types']
+    number_of_plants = config['General']['number_of_plants']
+
+    tank1_volume, tank2_volume, tank3_volume, target_ec = calculate_nutrient_mix(plant_type, plant_types, number_of_plants, config)
+
+    # Simulate mixing process
+    main_tank_ec = (tank1_volume * config['Nutrients']['tank1_concentration'] +
+                    tank2_volume * config['Nutrients']['tank2_concentration'] +
+                    tank3_volume * config['Nutrients']['tank3_concentration']) / (
+                               tank1_volume + tank2_volume + tank3_volume)
+
+    # Log the nutrient mix
+    log_nutrient_mix(db_name, plant_type, number_of_plants, tank1_volume, tank2_volume, tank3_volume, main_tank_ec)
+
+    print(f"Mixed nutrients for {number_of_plants} {plant_type} plants.")
+    print(f"Tank 1: {tank1_volume:.2f}L, Tank 2: {tank2_volume:.2f}L, Tank 3: {tank3_volume:.2f}L")
+    print(f"Main tank EC: {main_tank_ec:.2f} mS/cm (Target: {target_ec} mS/cm)")
 
 def main():
     # Specify the path to the config file
@@ -139,7 +167,7 @@ def main():
     setup_database(db_name)
 
     # Example of running the nutrient mixing process
-    mix_nutrients(db_name)
+    mix_nutrients(db_name, config)
 
 
 if __name__ == "__main__":
