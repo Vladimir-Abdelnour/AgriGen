@@ -8,7 +8,7 @@ from pathlib import Path
 # from tkinter import *
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
-from governer import control_loop_with_plant_data, get_current_data
+from governer import control_loop_with_plant_data, get_info
 from multiprocessing import Process
 
 OUTPUT_PATH = Path(__file__).parent
@@ -17,7 +17,7 @@ ASSETS_PATH = OUTPUT_PATH / Path(r"/Agrigen/frame0")
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH / Path(path)
 
-i = 1
+i = -1
 
 window = Tk()
 
@@ -296,7 +296,7 @@ image_18 = canvas.create_image(
     image=image_image_18
 )
 
-temperature = canvas.create_text(
+temp_text = canvas.create_text(
     239.0,
     840.5000610351562,
     anchor="nw",
@@ -305,7 +305,7 @@ temperature = canvas.create_text(
     font=("Montserrat Bold", 32 * -1)
 )
 
-humidity = canvas.create_text(
+hum_text = canvas.create_text(
     707.0,
     840.5000610351562,
     anchor="nw",
@@ -314,7 +314,7 @@ humidity = canvas.create_text(
     font=("Montserrat Bold", 32 * -1)
 )
 
-pH = canvas.create_text(
+ph_text = canvas.create_text(
     1159.0,
     840.5000610351562,
     anchor="nw",
@@ -323,7 +323,7 @@ pH = canvas.create_text(
     font=("Montserrat Bold", 32 * -1)
 )
 
-ec = canvas.create_text(
+ec_text = canvas.create_text(
     1613.0,
     840.5000610351562,
     anchor="nw",
@@ -365,29 +365,30 @@ image_22 = canvas.create_image(
 )
 
 def set_temperature(temp: str):
-    canvas.itemconfig(temperature, text=f"{temp} F")
-    canvas.itemconfig(temperature, )
+    canvas.itemconfig(temp_text, text=f"{temp} F")
 
 def set_humidity(humidity: str):
-    canvas.itemconfig(humidity, text=f"{humidity}%")
+    canvas.itemconfig(hum_text, text=f"{humidity}%")
 
 def set_phlevel(ph: str):
-    canvas.itemconfig(ph, text=pH)
+    canvas.itemconfig(ph_text, text=ph)
 
 def set_eclevel(ec: str):
-    canvas.itemconfig(ec, text=ec)
+    canvas.itemconfig(ec_text, text=ec)
 
 window.resizable(False, False)
 
 def background_task():
+    global i
+    i = i + 1
     control_loop_with_plant_data("lettuce", i)
-    temp, hum, ph, ec = get_current_data()
+    temp, hum, ph, ec = get_info()
+    set_temperature(temp)
     set_humidity(hum)
     set_phlevel(ph)
     set_eclevel(ec)
-    window.after(1000, background_task)
+    window.after(3000, background_task)
 
 background_task()
-i = 2
 
 window.mainloop()

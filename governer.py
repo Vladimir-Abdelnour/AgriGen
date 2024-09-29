@@ -29,7 +29,7 @@ def read_from_api(location: str):
     """
     # Placeholder for API call - Replace with real API logic
     # Example response format: {'cloudiness': 60} means 60% cloud cover
-    forecast_data = {'cloudiness': random.randint(0, 100)}  # Simulating cloudiness with random values
+    forecast_data = random.randint(0, 100)  # Simulating cloudiness with random values
     return forecast_data
 
 
@@ -308,143 +308,162 @@ def electricity_control():
 
 # Main Control Loop with Plant-Specific Data Integration
 
-def control_loop_with_plant_data(plant_type: str):
-    # Specify the path to the CSV files
-    csv_folder = os.path.join('StaticFiles')
+temp_text = ""
+hum_text = ""
+ph_text = ""
+ec_text = ""
 
-    # Create static.db from CSV files
-    create_static_db(csv_folder)
+def update_info(temperature, humidity, ph, ec):
+    global temp_text, hum_text, ph_text, ec_text
+    temp_text = str(temperature)
+    hum_text = str(humidity)
+    ph_text = str(ph)
+    ec_text = str(ec)
 
-    # Get configuration from static.db
-    try:
+def get_info():
+    return temp_text, hum_text, ph_text, ec_text
+
+def control_loop_with_plant_data(plant_type: str, i: int):
+
+    if i == 0:
+        # Specify the path to the CSV files
+        csv_folder = os.path.join('StaticFiles')
+
+        # Create static.db from CSV files
+        create_static_db(csv_folder)
+
         # Get configuration from static.db
-        config = get_config_from_static_db()
-    except Exception as e:
-        print(f"Error reading configuration: {e}")
-        return
+        try:
+            # Get configuration from static.db
+            config = get_config_from_static_db()
+        except Exception as e:
+            print(f"Error reading configuration: {e}")
+            return
 
-        # Check if we got all the expected configuration
-    expected_tables = ['general', 'environment', 'lighting', 'water', 'nutrients', 'energy', 'plants', 'co2',
-                       'constants', 'simulation']
-    missing_tables = [table for table in expected_tables if table not in config]
-    if missing_tables:
-        print(f"Warning: The following tables are missing from the configuration: {missing_tables}")
+            # Check if we got all the expected configuration
+        expected_tables = ['general', 'environment', 'lighting', 'water', 'nutrients', 'energy', 'plants', 'co2',
+                           'constants', 'simulation']
+        missing_tables = [table for table in expected_tables if table not in config]
+        if missing_tables:
+            print(f"Warning: The following tables are missing from the configuration: {missing_tables}")
 
-    # Read input values from config
-    # General
-    number_of_plants = int(config['general']['number_of_plants'])
-    floor_area = float(config['general']['floor_area'])
+        # Read input values from config
+        # General
+        number_of_plants = int(config['general']['number_of_plants'])
+        floor_area = float(config['general']['floor_area'])
 
-    # Environment
-    co2_min = float(config['environment']['co2_min'])
-    co2_max = float(config['environment']['co2_max'])
-    water_vapor_density_in = float(config['environment']['water_vapor_density_in'])
-    water_vapor_density_out = float(config['environment']['water_vapor_density_out'])
-    temperature = float(config['environment']['temperature'])
-    num_air_exchanges = float(config['environment']['num_air_exchanges'])
-    volume_room_air = float(config['environment']['volume_room_air'])
+        # Environment
+        co2_min = float(config['environment']['co2_min'])
+        co2_max = float(config['environment']['co2_max'])
+        water_vapor_density_in = float(config['environment']['water_vapor_density_in'])
+        water_vapor_density_out = float(config['environment']['water_vapor_density_out'])
+        temperature = float(config['environment']['temperature'])
+        num_air_exchanges = float(config['environment']['num_air_exchanges'])
+        volume_room_air = float(config['environment']['volume_room_air'])
 
-    # Lighting
-    photosynthetic_radiation_lamps = float(config['lighting']['photosynthetic_radiation_lamps'])
-    photosynthetic_radiation_surface = float(config['lighting']['photosynthetic_radiation_surface'])
+        # Lighting
+        photosynthetic_radiation_lamps = float(config['lighting']['photosynthetic_radiation_lamps'])
+        photosynthetic_radiation_surface = float(config['lighting']['photosynthetic_radiation_surface'])
 
-    # Water
-    water_recycled = float(config['water']['water_recycled'])
-    water_supply_rate = float(config['water']['water_supply_rate'])
-    water_held_in_plants = float(config['water']['water_held_in_plants'])
-    water_inflow_rate = float(config['water']['water_inflow_rate'])
-    water_outflow_rate = float(config['water']['water_outflow_rate'])
+        # Water
+        water_recycled = float(config['water']['water_recycled'])
+        water_supply_rate = float(config['water']['water_supply_rate'])
+        water_held_in_plants = float(config['water']['water_held_in_plants'])
+        water_inflow_rate = float(config['water']['water_inflow_rate'])
+        water_outflow_rate = float(config['water']['water_outflow_rate'])
 
-    # Nutrients
-    ion_concentration_in = float(config['nutrients']['ion_concentration_in'])
-    ion_concentration_out = float(config['nutrients']['ion_concentration_out'])
+        # Nutrients
+        ion_concentration_in = float(config['nutrients']['ion_concentration_in'])
+        ion_concentration_out = float(config['nutrients']['ion_concentration_out'])
 
-    # Energy
-    elec_water_pumps = float(config['energy']['elec_water_pumps'])
-    heat_energy_exchange = float(config['energy']['heat_energy_exchange'])
-    elec_air_conditioners = float(config['energy']['elec_air_conditioners'])
+        # Energy
+        elec_water_pumps = float(config['energy']['elec_water_pumps'])
+        heat_energy_exchange = float(config['energy']['heat_energy_exchange'])
+        elec_air_conditioners = float(config['energy']['elec_air_conditioners'])
 
-    # Plants
-    dry_mass_increase_rate = float(config['plants']['dry_mass_increase_rate'])
+        # Plants
+        dry_mass_increase_rate = float(config['plants']['dry_mass_increase_rate'])
 
-    # CO2
-    co2_human_respiration = float(config['co2']['co2_human_respiration'])
-    co2_cylinder = float(config['co2']['co2_cylinder'])
+        # CO2
+        co2_human_respiration = float(config['co2']['co2_human_respiration'])
+        co2_cylinder = float(config['co2']['co2_cylinder'])
 
-    # Constants
-    conversion_factor_plant_mass = float(config['constants']['conversion_factor_plant_mass'])
-    conversion_factor_elec_energy = float(config['constants']['conversion_factor_elec_energy'])
-    conversion_factor_co2 = float(config['constants']['conversion_factor_co2'])
-    conversion_factor_water_vapor = float(config['constants']['conversion_factor_water_vapor'])
-    conversion_factor_liquid_water = float(config['constants']['conversion_factor_liquid_water'])
+        # Constants
+        conversion_factor_plant_mass = float(config['constants']['conversion_factor_plant_mass'])
+        conversion_factor_elec_energy = float(config['constants']['conversion_factor_elec_energy'])
+        conversion_factor_co2 = float(config['constants']['conversion_factor_co2'])
+        conversion_factor_water_vapor = float(config['constants']['conversion_factor_water_vapor'])
+        conversion_factor_liquid_water = float(config['constants']['conversion_factor_liquid_water'])
 
-    # Simulation
-    delta_t = float(config['simulation']['delta_t'])
-    t = float(config['simulation']['t'])
+        # Simulation
+        delta_t = float(config['simulation']['delta_t'])
+        t = float(config['simulation']['t'])
 
-    # Calculations
-    water_use_efficiency = (water_recycled + water_held_in_plants) / water_supply_rate
+        # Calculations
+        water_use_efficiency = (water_recycled + water_held_in_plants) / water_supply_rate
 
-    water_vapor_loss = (volume_room_air * num_air_exchanges * (
+        water_vapor_loss = (volume_room_air * num_air_exchanges * (
                 water_vapor_density_in - water_vapor_density_out)) / floor_area
 
-    #co2_loss = conversion_factor_co2 * num_air_exchanges * volume_room_air * (co2_in - co2_out) / floor_area
+        # co2_loss = conversion_factor_co2 * num_air_exchanges * volume_room_air * (co2_in - co2_out) / floor_area
 
-    #co2_use_efficiency = (co2_cylinder - co2_loss) / (co2_cylinder + co2_human_respiration)
+        # co2_use_efficiency = (co2_cylinder - co2_loss) / (co2_cylinder + co2_human_respiration)
 
-    light_energy_efficiency_parl = (
+        light_energy_efficiency_parl = (
                                                conversion_factor_plant_mass * dry_mass_increase_rate) / photosynthetic_radiation_lamps
 
-    light_energy_efficiency_parp = (
+        light_energy_efficiency_parp = (
                                                conversion_factor_plant_mass * dry_mass_increase_rate) / photosynthetic_radiation_surface
 
-    electric_energy_efficiency = conversion_factor_elec_energy * light_energy_efficiency_parl
+        electric_energy_efficiency = conversion_factor_elec_energy * light_energy_efficiency_parl
 
-    elec_lamps = photosynthetic_radiation_lamps / conversion_factor_elec_energy
+        elec_lamps = photosynthetic_radiation_lamps / conversion_factor_elec_energy
 
-    ions_absorbed = ion_concentration_in * water_inflow_rate - ion_concentration_out * water_outflow_rate
+        ions_absorbed = ion_concentration_in * water_inflow_rate - ion_concentration_out * water_outflow_rate
 
-    # Note: Some calculations are commented out due to missing variables or circular dependencies
-    cop_heat_pumps = heat_energy_exchange / elec_air_conditioners
-    #elec_air_conditioners = (elec_lamps + elec_water_pumps + heat_energy_exchange) / cop_heat_pumps
-    elec_total = elec_lamps + elec_air_conditioners + elec_water_pumps
-    # This is a simplified example and would need to be adjusted based on your specific system
-    ion_concentration = config['nutrients']['ion_concentration_in']  # mol/mol
-    nutrient_solution_supply_rate = config['water']['water_inflow_rate']  # kg/(m²·s)
-    density_of_solution = 1000  # kg/m³ (assuming it's close to water density)
+        # Note: Some calculations are commented out due to missing variables or circular dependencies
+        cop_heat_pumps = heat_energy_exchange / elec_air_conditioners
+        # elec_air_conditioners = (elec_lamps + elec_water_pumps + heat_energy_exchange) / cop_heat_pumps
+        elec_total = elec_lamps + elec_air_conditioners + elec_water_pumps
+        # This is a simplified example and would need to be adjusted based on your specific system
+        ion_concentration = config['nutrients']['ion_concentration_in']  # mol/mol
+        nutrient_solution_supply_rate = config['water']['water_inflow_rate']  # kg/(m²·s)
+        density_of_solution = 1000  # kg/m³ (assuming it's close to water density)
 
-    # Convert water inflow rate to volume
-    volume_inflow_rate = nutrient_solution_supply_rate / density_of_solution  # m³/(m²·s)
+        # Convert water inflow rate to volume
+        volume_inflow_rate = nutrient_solution_supply_rate / density_of_solution  # m³/(m²·s)
 
-    # Calculate ions_supplied
-    ions_supplied = ion_concentration * volume_inflow_rate  # mol/(m²·s)
-    fertilizer_use_efficiency = ions_absorbed / ions_supplied
+        # Calculate ions_supplied
+        ions_supplied = ion_concentration * volume_inflow_rate  # mol/(m²·s)
+        fertilizer_use_efficiency = ions_absorbed / ions_supplied
 
-    # Print some results
-    # print(f"Number of plants: {number_of_plants}")
-    # print(f"Water Use Efficiency: {water_use_efficiency}")
-    # print(f"CO2 Use Efficiency: {co2_use_efficiency}")
-    # print(f"Light Energy Efficiency (PAR_L): {light_energy_efficiency_parl}")
-    # print(f"Electric Energy Efficiency: {electric_energy_efficiency}")
+        # Print some results
+        # print(f"Number of plants: {number_of_plants}")
+        # print(f"Water Use Efficiency: {water_use_efficiency}")
+        # print(f"CO2 Use Efficiency: {co2_use_efficiency}")
+        # print(f"Light Energy Efficiency (PAR_L): {light_energy_efficiency_parl}")
+        # print(f"Electric Energy Efficiency: {electric_energy_efficiency}")
 
-    # # Database operations
-    # db_name = 'hydroponics.db'
-    # setup_database(db_name)
-    #
-    # # Example of running the nutrient mixing process
-    # mix_nutrients(db_name, config)
+        # # Database operations
+        # db_name = 'hydroponics.db'
+        # setup_database(db_name)
+        #
+        # # Example of running the nutrient mixing process
+        # mix_nutrients(db_name, config)
 
-    """
-    Main control loop for AgriGen with plant-specific data integration.
-    - Reads plant-specific data from the database based on the plant type.
-    - Calls individual subsystem control functions continuously.
-    
-    Args:
-        plant_type (str): The type of plant being cultivated (e.g., "Tomato").
-    """
+        """
+        Main control loop for AgriGen with plant-specific data integration.
+        - Reads plant-specific data from the database based on the plant type.
+        - Calls individual subsystem control functions continuously.
+
+        Args:
+            plant_type (str): The type of plant being cultivated (e.g., "Tomato").
+        """
+
     # Read plant-specific control parameters from the database
-    ec_min, ec_max, ph_min, ph_max, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max= read_plant_data(plant_type)
-    
+    ec_min, ec_max, ph_min, ph_max, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max = read_plant_data(
+        plant_type)
+
     # Main control loop to manage all subsystems
     conn = sqlite3.connect("Databases/static.db")
     cursor = conn.cursor()
@@ -461,54 +480,46 @@ def control_loop_with_plant_data(plant_type: str):
 
     # Close the database connection
     conn.close()
-    current_time=timestamp[0][0]
 
-    i = 0
-    while i<len(timestamp):
-        # Simulated sensor readings for demonstration purposes
-        current_par = read_par_level(current_time)         # Simulate a PAR sensor reading
-        current_ec = read_ec_level(current_time)           # Simulate an EC sensor reading
-        current_ph = read_ph_level(current_time)           # Simulate a pH sensor reading
-        current_co2 = read_co2_level(current_time)         # Simulate a CO2 sensor reading
-        current_temp = read_temperature(current_time)      # Simulate a temperature sensor reading
-        current_humidity = read_humidity(current_time)     # Simulate a humidity sensor reading
+    current_time = timestamp[i][0]
 
-        #Execute control functions
-        lighting_control(current_time)
-        print("Nutrients Mixing")
-        #commented out for temporary reasons
-        #nutrient_mixology_control(ph_min, ph_max, ec_min, ec_max)
-        print("Irigation")
-        irrigation_control()
-        print('Flushing')
-        water_flushing_control()
-        print('CO2 Enrichment')
-        co2_enrichment_control(current_time, co2_min, co2_max,co2_upper_margin=0.02) # Assuming a 0.02 margin for CO2 control
-        print('Temperature')
-        temperature_control(current_time, temperature_min, temperature_max, cooling_margin=2, heating_margin=2) # Example margins
-        print('Humidity')
-        humidity_control(current_time,humidity_min, humidity_max, upper_deadband=5) # Example deadband margin for humidity
-        print('Electricity')
-        electricity_control()
+    # Simulated sensor readings for demonstration purposes
+    current_par = read_par_level(current_time)         # Simulate a PAR sensor reading
+    current_ec = read_ec_level(current_time)           # Simulate an EC sensor reading
+    current_ph = read_ph_level(current_time)           # Simulate a pH sensor reading
+    current_co2 = read_co2_level(current_time)         # Simulate a CO2 sensor reading
+    current_temp = read_temperature(current_time)      # Simulate a temperature sensor reading
+    current_humidity = read_humidity(current_time)     # Simulate a humidity sensor reading
 
-    
-         # Push the current sensor readings and control states to the output database
-        push_data_to_database(
-            current_par=current_par,
-            current_ec=current_ec,
-            current_ph=current_ph,
-            current_co2=current_co2,
-            current_temp=current_temp,
-            current_humidity=current_humidity,
-            daily_par_accumulation=daily_par_accumulation,
-            is_peak_hour=is_peak_hour
-        )
-        print('over here')
-        # Wait for a short interval before checking the status again
-        time.sleep(1)
-        i=i+1
-        current_time = timestamp[i][0]
+    #Execute control functions
+    lighting_control(current_time)
+    print("Nutrients Mixing")
+    #commented out for temporary reasons
+    #nutrient_mixology_control(ph_min, ph_max, ec_min, ec_max)
+    print("Irigation")
+    irrigation_control()
+    print('Flushing')
+    water_flushing_control()
+    print('CO2 Enrichment')
+    co2_enrichment_control(current_time, co2_min, co2_max,co2_upper_margin=0.02) # Assuming a 0.02 margin for CO2 control
+    print('Temperature')
+    temperature_control(current_time, temperature_min, temperature_max, cooling_margin=2, heating_margin=2) # Example margins
+    print('Humidity')
+    humidity_control(current_time,humidity_min, humidity_max, upper_deadband=5) # Example deadband margin for humidity
+    print('Electricity')
+    electricity_control()
 
+    update_info(int(current_temp), int(current_humidity), round(current_ph, 1), round(current_ec, 2))
 
-
-control_loop_with_plant_data("lettuce")
+     # Push the current sensor readings and control states to the output database
+    push_data_to_database(
+        current_par=current_par,
+        current_ec=current_ec,
+        current_ph=current_ph,
+        current_co2=current_co2,
+        current_temp=current_temp,
+        current_humidity=current_humidity,
+        daily_par_accumulation=daily_par_accumulation,
+        is_peak_hour=is_peak_hour
+    )
+    print('over here')
