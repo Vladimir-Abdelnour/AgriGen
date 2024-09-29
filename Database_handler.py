@@ -196,3 +196,144 @@ def get_sensor_data(start_time, end_time, db_name='static.db'):
     sensor_data = cursor.fetchall()
     conn.close()
     return sensor_data
+
+
+
+# Function to read plant-specific data and set control parameters
+# Define the function to read plant data
+# Define the function to read plant data and return the values
+def read_plant_data(plant_type: str):
+    """
+    Reads plant-specific data from the database and sets control parameters.
+    
+    Args:
+        plant_type (str): The type of plant (e.g., "Tomato", "Lettuce").
+    
+    Returns:
+        tuple: Contains (ph_min, ph_max, ec_min, ec_max, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max)
+    """
+    # Initialize variables to None
+    ph_min = ph_max = ec_min = ec_max = None
+    co2_min = co2_max = temperature_min = temperature_max = humidity_min = humidity_max = None
+
+    # Connect to the database (replace with actual database path)
+    conn = sqlite3.connect("Databases/static.db")
+    cursor = conn.cursor()
+
+    try:
+        # Query to retrieve EC and pH parameters for the specified plant type from the Nutrients table
+        cursor.execute("""
+            SELECT parameter, value
+            FROM Nutrients
+            WHERE parameter LIKE ?
+        """, (f"{plant_type}_%",))
+        
+        nutrient_results = cursor.fetchall()
+        
+        # Assign nutrient-specific values to respective variables
+        for parameter, value in nutrient_results:
+            if parameter == f"{plant_type}_ec_min":
+                ec_min = float(value)
+            elif parameter == f"{plant_type}_ec_max":
+                ec_max = float(value)
+            elif parameter == f"{plant_type}_ph_min":
+                ph_min = float(value)
+            elif parameter == f"{plant_type}_ph_max":
+                ph_max = float(value)
+
+        # Query to retrieve general environmental parameters from the Environment table
+        cursor.execute("""
+            SELECT parameter, value
+            FROM Environment
+        """)
+        environment_results = cursor.fetchall()
+        
+        # Assign environmental parameters to respective variables
+        for parameter, value in environment_results:
+            if parameter == "co2_min":
+                co2_min = float(value)
+            elif parameter == "co2_max":
+                co2_max = float(value)
+            elif parameter == "temperature_min":
+                temperature_min = float(value)
+            elif parameter == "temperature_max":
+                temperature_max = float(value)
+            elif parameter == "humidity_min":
+                humidity_min = float(value)
+            elif parameter == "humidity_max":
+                humidity_max = float(value)
+
+        result = (ph_min, ph_max, ec_min, ec_max, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max)
+
+        # Print to verify the values
+        print(f"pH Range: {ph_min} - {ph_max}")
+        print(f"EC Range: {ec_min} - {ec_max}")
+        print(f"CO2 Range: {co2_min} - {co2_max}")
+        print(f"Temperature Range: {temperature_min} - {temperature_max} °C")
+        print(f"Humidity Range: {humidity_min} - {humidity_max} %")
+        # Example usage of the function with a mock plant type (replace with real plant types)
+        # Uncomment the line below to use the function in your environment:
+        # read_plant_data("Tomato")
+
+        # Return the variables as a tuple
+        return result
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None  # Return None in case of a database error
+
+    finally:
+        # Close the database connection
+        conn.close()
+
+    
+
+
+def push_data_to_database(current_par, current_ec, current_ph, current_co2, current_temp, current_humidity, daily_par_accumulation, is_peak_hour):
+    """
+    Creates an 'output.db' database in the 'Databases' folder and pushes the given values into a table named 'control_data'.
+    
+    Args:
+        current_par (float): Current PAR value.
+        current_ec (float): Current EC value.
+        current_ph (float): Current pH value.
+        current_co2 (float): Current CO2 value.
+        current_temp (float): Current temperature value.
+        current_humidity (float): Current humidity value.
+        daily_par_accumulation (float): Daily PAR accumulation value.
+        is_peak_hour (bool): Indicates whether it is currently a peak utility hour.
+    """
+
+    print("Here")
+    # Define the path to the output database
+    db_path = os.path.join("Databases", "output.db")
+    
+    # Create or connect to the output database
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Create the table if it doesn't exist
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS control_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            current_par REAL,
+            current_ec REAL,
+            current_ph REAL,
+            current_co2 REAL,
+            current_temp REAL,
+            current_humidity REAL,
+            daily_par_accumulation REAL,
+            is_peak_hour INTEGER
+        )
+    """)
+    print("Over Here")
+    # Insert the current values into the table
+    cursor.execute("""
+        INSERT INTO control_data (current_par, current_ec, current_ph, current_co2, current_temp, current_humidity, daily_par_accumulation, is_peak_hour)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (current_par, current_ec, current_ph, current_co2, current_temp, current_humidity, daily_par_accumulation, int(is_peak_hour)))
+
+    # Commit the changes and close the connection
+    conn.commit()
+    conn.close()
+    print("Data pushed to output.db successfully.")

@@ -1,5 +1,5 @@
 # Updated Sensor Reading Functions with Database Integration Comments for AgriGen
-
+import sqlite3
 # Nutrient Tank Water Levels
 def read_water_level_nutrient_a():
     """
@@ -161,12 +161,7 @@ def read_energy_usage():
     energy_usage = 50.0  # Example value in kWh
     return energy_usage
 
-# Mock function to simulate database read for plant-specific control parameters
-
-# Import necessary libraries
-import sqlite3  # Assuming SQLite for database, replace with appropriate library for your database
-
-# Function to read plant-specific data and set control parameters
+# Modified function with updated variable names and return statement
 def read_plant_data(plant_type: str):
     """
     Reads plant-specific data from the database and sets control parameters.
@@ -175,52 +170,101 @@ def read_plant_data(plant_type: str):
         plant_type (str): The type of plant (e.g., "Tomato", "Lettuce").
     
     This function connects to the 'sensory_data' database and retrieves values for:
-    - target_ec, target_ph, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max
+    - ec_min, ec_max, ph_min, ph_max, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max
+    Returns:
+        tuple: (ph_min, ph_max, ec_min, ec_max)
     """
-    global target_ec, target_ph, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max
+    global co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max
     
     # Connect to the database (mock connection)
-    # Replace 'sensory_data.db' with actual database name or connection details
-    conn = sqlite3.connect("sensory_data.db")  # Mock database connection
+    conn = sqlite3.connect("Databases/static.db")  
     cursor = conn.cursor()
 
-    try:
-        # Query to retrieve plant-specific data based on plant_type
-        cursor.execute("""
-            SELECT target_ec_min, target_ec_max, target_ph_min, target_ph_max, co2_min, co2_max,
-                   temperature_min, temperature_max, humidity_min, humidity_max
-            FROM plant_parameters
-            WHERE plant_type = ?
-        """, (plant_type,))
-        
-        # Fetch the result
-        result = cursor.fetchone()
 
+    try:
+        # Define the plant type you're looking for
+        plant_type = 'lettuce'  # Example plant type; change as needed
+
+        # Retrieve data for the specific plant type from Nutrients table
+        cursor.execute("""
+            SELECT parameter, value
+            FROM Nutrients
+            WHERE parameter LIKE ?
+        """, (f"{plant_type}_%",))
+        nutrient_results = cursor.fetchall()
+
+        # Retrieve general environmental data from Environment table
+        cursor.execute("""
+            SELECT parameter, value
+            FROM Environment
+        """)
+        environment_results = cursor.fetchall()
+
+        # Initialize variables for nutrient-specific parameters
+        ec_min = ec_max = ph_min = ph_max = None
+
+        # Parse nutrient results and assign to respective variables
+        for parameter, value in nutrient_results:
+            if parameter == f"{plant_type}_ec_min":
+                ec_min = float(value)
+            elif parameter == f"{plant_type}_ec_max":
+                ec_max = float(value)
+            elif parameter == f"{plant_type}_ph_min":
+                ph_min = float(value)
+            elif parameter == f"{plant_type}_ph_max":
+                ph_max = float(value)
+
+        # Initialize variables for general environmental parameters
+        co2_min = co2_max = temperature_min = temperature_max = humidity_min = humidity_max = None
+
+        # Parse environment results and assign to respective variables
+        for parameter, value in environment_results:
+            if parameter == "co2_min":
+                co2_min = float(value)
+            elif parameter == "co2_max":
+                co2_max = float(value)
+            elif parameter == "temperature_min":
+                temperature_min = float(value)
+            elif parameter == "temperature_max":
+                temperature_max = float(value)
+            elif parameter == "humidity_min":
+                humidity_min = float(value)
+            elif parameter == "humidity_max":
+                humidity_max = float(value)
+
+        # Combine all results into a single result tuple
+        result = (ec_min, ec_max, ph_min, ph_max, co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max)
+        
         # Check if data was found for the specified plant type
         if result:
-            # Unpack the result and assign to global variables
-            (target_ec_min, target_ec_max, target_ph_min, target_ph_max,
-             co2_min, co2_max, temperature_min, temperature_max, humidity_min, humidity_max) = result
+
+            # Output the result
+            print("Result:", result)
+
+            # Close the database connection
+            conn.close()
+
             
             # Print the results to verify (can be logged or assigned as needed)
             print(f"Plant Type: {plant_type}")
-            print(f"EC Range: {target_ec_min} - {target_ec_max} mS/cm")
-            print(f"pH Range: {target_ph_min} - {target_ph_max}")
+            print(f"EC Range: {ec_min} - {ec_max} mS/cm")
+            print(f"pH Range: {ph_min} - {ph_max}")
             print(f"CO2 Range: {co2_min} - {co2_max} ppm")
-            print(f"Temperature Range: {temperature_min} - {temperature_max} °C")
+            print(f"Temperature Range: {temperature_min-273} - {temperature_max-273} °C")
             print(f"Humidity Range: {humidity_min} - {humidity_max} %")
             
+            # Return the ph and ec ranges
+            return ph_min, ph_max, ec_min, ec_max
         else:
             print(f"No data found for plant type: {plant_type}")
+            return None, None, None, None  # Return None values if no data found
     
     except sqlite3.Error as e:
         print(f"Database error: {e}")
+        return None, None, None, None  # Return None values on database error
     
     finally:
         # Close the database connection
         conn.close()
 
-# Example usage of the function with a mock plant type (replace with real plant types)
-# Uncomment the line below to use the function in your environment:
-# read_plant_data("Tomato")
 
