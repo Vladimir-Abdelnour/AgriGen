@@ -14,6 +14,7 @@ import creds
 
 class Color(Enum):
     Red = "#C90303"
+    Yellow = "#CDB908"
     Green = "#27BC1A"
 
 #UI Controls
@@ -26,6 +27,7 @@ hum_color = Color.Green
 ph_color = Color.Green
 ec_color = Color.Green
 alert_messages = []
+alert_message_colors = []
 image_index = 0
 
 API_ENDPOINT = 'https://plant.id/api/v3/identification'
@@ -290,6 +292,7 @@ def water_flushing_control():
         # Activate valves and pumps to flush the entire system
         global alert_messages
         alert_messages.append("Flushing the Entire System and Restarting")
+        alert_message_colors.append(Color.Red)
         control_valve_nutrient_rich(True)  # Open nutrient-rich tank valve
         activate_pump(True)  # Activate pump to flush out the system
         time.sleep(6)  # Flush for 1 minute (placeholder value)
@@ -388,6 +391,7 @@ def humidity_control(time,humidity_min, humidity_max, upper_deadband):
     if current_humidity < humidity_min:
         global alert_messages
         alert_messages.append(f"Humidity level is very low at {current_humidity}%.")
+        alert_message_colors.append(Color.Red)
         print(f"Error: Humidity level is {current_humidity}%, below the minimum of {humidity_min}%. Please check the system.")
         hum_color = Color.Red
 
@@ -427,6 +431,9 @@ def update_info(temperature, humidity, ph, ec):
 
 def get_alerts():
     return alert_messages
+
+def get_alert_colors():
+    return alert_message_colors
 
 def get_textinfo():
     return temp_text, hum_text, ph_text, ec_text
@@ -636,6 +643,7 @@ def control_loop_with_plant_data(plant_type: str, i: int):
     global alert_messages
     if (probability > 0.4):
         alert_messages.append(f"The plant has a {probability*100:.2f}% chance of being unhealthy.")
+        alert_message_colors.append(Color.Red)
 
     # Fetch the required weather data
     temperature_celsius = get_weather_for_today(properties_data, 'temperature')  # Temperature in Celsius
@@ -645,9 +653,11 @@ def control_loop_with_plant_data(plant_type: str, i: int):
 
     if sky_cover is not None:
         alert_messages.append(f"Sky Cover for Tempe: {sky_cover}%")
+        alert_message_colors.append(Color.Yellow)
 
     if rain_probability is not None:
         alert_messages.append(f"Rain Probability: {rain_probability}%")
+        alert_message_colors.append(Color.Yellow)
 
     update_info(int(current_temp), int(current_humidity), round(current_ph, 1), round(current_ec, 2))
 

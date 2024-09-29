@@ -444,40 +444,47 @@ def plant_health(temp_color: Color, hum_color: Color, ph_color: Color, ec_color:
         canvas.itemconfig(plant_health_text, text="OPTIMAL", fill=Color.Green.value)
 
 start_time = [0,0,0]
-def set_alerts(alert_messages):
+def set_alerts(alert_messages, alert_colors):
     global start_time
 
     # Check for each alert slot and set the message if it's empty
     if canvas.itemcget(alert1_text, "text") == "" and alert_messages:
         canvas.itemconfig(alert1_text, text=alert_messages.pop(0))  # Show and remove the first alert
+        set_alert_color(alert1_text, alert_colors)
         start_time[0] = time.time()  # Set the start time for alert1
     elif canvas.itemcget(alert2_text, "text") == "" and alert_messages:
         canvas.itemconfig(alert2_text, text=alert_messages.pop(0))  # Show and remove the first alert
+        set_alert_color(alert2_text, alert_colors)
         start_time[1] = time.time()  # Set the start time for alert2
     elif canvas.itemcget(alert3_text, "text") == "" and alert_messages:
         canvas.itemconfig(alert3_text, text=alert_messages.pop(0))  # Show and remove the first alert
+        set_alert_color(alert3_text, alert_colors)
         start_time[2] = time.time()  # Set the start time for alert3
 
     # Check if any alert has expired (10 seconds in this example) and clear it
     if time.time() - start_time[0] >= 10 and canvas.itemcget(alert1_text, "text") != "":
-        canvas.itemconfig(alert1_text, text="")  # Clear alert1 when expired
+        canvas.itemconfig(alert1_text, text="", fill=Color.Red.value)  # Clear alert1 when expired
     if time.time() - start_time[1] >= 10 and canvas.itemcget(alert2_text, "text") != "":
-        canvas.itemconfig(alert2_text, text="")  # Clear alert2 when expired
+        canvas.itemconfig(alert2_text, text="", fill=Color.Red.value)  # Clear alert2 when expired
     if time.time() - start_time[2] >= 10 and canvas.itemcget(alert3_text, "text") != "":
-        canvas.itemconfig(alert3_text, text="")  # Clear alert3 when expired
+        canvas.itemconfig(alert3_text, text="", fill=Color.Red.value)  # Clear alert3 when expired
 
     # After clearing, check if any slot is empty and refill it from the remaining alerts
     if canvas.itemcget(alert1_text, "text") == "" and alert_messages:
         canvas.itemconfig(alert1_text, text=alert_messages.pop(0))
+        set_alert_color(alert1_text, alert_colors)
         start_time[0] = time.time()
     if canvas.itemcget(alert2_text, "text") == "" and alert_messages:
         canvas.itemconfig(alert2_text, text=alert_messages.pop(0))
+        set_alert_color(alert2_text, alert_colors)
         start_time[1] = time.time()
     if canvas.itemcget(alert3_text, "text") == "" and alert_messages:
         canvas.itemconfig(alert3_text, text=alert_messages.pop(0))
+        set_alert_color(alert3_text, alert_colors)
         start_time[2] = time.time()
 
-
+def set_alert_color(alert, alert_colors):
+    canvas.itemconfig(alert, fill=alert_colors.pop(0).value)
 
 window.resizable(False, False)
 
@@ -488,14 +495,15 @@ def background_task():
     temp, hum, ph, ec = get_textinfo()
     temp_color, hum_color, ph_color, ec_color = get_colorinfo()
     alerts = get_alerts()
+    alert_colors = get_alert_colors()
     set_temperature(temp, temp_color)
     set_humidity(hum, hum_color)
     set_phlevel(ph, ph_color)
     set_eclevel(ec, ec_color)
     plant_health(temp_color, hum_color, ph_color, ec_color)
     if alerts:
-        set_alerts(alerts)
-    window.after(5000, background_task)
+        set_alerts(alerts, alert_colors)
+    window.after(4000, background_task)
 
 background_task()
 
